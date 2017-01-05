@@ -1,5 +1,6 @@
 # NBA_Schedule_Score
 This Alfred workflow will get nba daily schedule and score
+![alt text](https://github.com/ChrisXi/NBA_Schedule_Score/blob/master/sc.png "result pic")
 
 ### Basic Usage
 + **nba**            (default date is current date)  
