@@ -34,7 +34,8 @@ def get(wf):
 		day = '0' + day
 
 	date1 = year+"/"+month+"/"+day
-	date2 = year+""+month+""+day
+	date2 = month+"-"+day+"-"+year
+	date3 = year+""+month+""+day
 
 	request = "/nba-t3/games/"+date1+"/schedule.xml?api_key=mhptr4zdhsbdy39qwzq8cxds"
 	conn.request("GET", request)
@@ -46,7 +47,13 @@ def get(wf):
 	wf = Workflow()
 	root = ET.fromstring(data)
 
+	
 	# TODO: check if exist
+	num = str(len(root[0][0]))
+
+	wf.add_item(title = num + " games on " + date2)
+
+	
 	for game in root[0][0]:	
 		# print(game.attrib['status'])
 		status = game.attrib['status']
@@ -63,8 +70,10 @@ def get(wf):
 		info = home + " (" + home_points + ")" + " : " + away + " (" + away_points + ")"
 		# print(info)
 
-		return_url = "http://www.nba.com/games/"+date2+"/"+away+home
+		return_url = "http://www.nba.com/games/"+date3+"/"+away+home
+		icon_url   = "image/" + home + ".png"
 		wf.add_item(title = info,
+					icon  = icon_url,
 					arg   = return_url,
 					valid = True)
 	wf.send_feedback()
