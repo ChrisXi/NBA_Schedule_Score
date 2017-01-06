@@ -1,32 +1,106 @@
 import sys
 import os
 import httplib
+import time
 import datetime as dt
 
 import xml.etree.ElementTree as ET
 from workflow import Workflow
 
+class Date:
+	def __init__(self, year, month, day, valid):
+		self.year = year
+		self.month = month
+		self.day = day
+		self.valid = valid
+
+def getDate(query):
+	
+	date = dt.datetime.now()
+	
+	valid = 0
+
+	year  = None
+	month = None
+	day  = None
+
+	if len(query) == 0:
+		valid = 1
+	elif len(query) == 1:
+		if query == "y":
+			date = date - dt.timedelta(days = 1)
+			valid = 1
+		elif query == "t":
+			date = date + dt.timedelta(days = 1)
+			valid = 1
+		else:
+			if query.isdigit() and query != "0":
+				day = query
+				valid = 1
+	else:
+		if query[0] == "+" or query[0] == "-":
+			days = query[1:]
+			if days.isdigit():
+				if query[0] == "+":
+					date = date + dt.timedelta(days = int(days))
+				else:
+					date = date - dt.timedelta(days = int(days))
+				valid = 1
+		else:
+			ymd = query.split()
+			if len(ymd) == 1:
+				if ymd[0].isdigit():
+					day = ymd[0]
+					valid = 1
+			elif len(ymd) == 2:
+				if ymd[0].isdigit() and ymd[1].isdigit():
+					month = ymd[0]
+					day = ymd[1]
+					valid = 1
+			elif len(ymd) == 3:
+				if ymd[0].isdigit() and ymd[1].isdigit() and ymd[2].isdigit():
+					year = ymd[0]
+					month = ymd[1]
+					day = ymd[2]
+					valid = 1
+
+	if valid == 1:
+		if year == None:
+			year = str(date.year)
+		if month == None:
+			month = str(date.month)
+		if day == None:	
+			day = str(date.day)
+
+		valid = validDate(year, month, day)
+
+	return Date(year, month, day, valid)
+
+def validDate(year, month, day):
+	valid = 1
+	try:
+		bb = dt.datetime(year=int(year),month=int(month),day=int(day))
+	except ValueError:
+		valid = 0
+
+	return valid
 
 def get(wf):
 	conn = httplib.HTTPSConnection("api.sportradar.us")
 
 	# http://api.sportradar.us/nba-t3/games/2016/12/31/schedule.xml?api_key=mhptr4zdhsbdy39qwzq8cxds
-    # query = query.split('$')
-    # part = int(sys.argv[2])
+	
+	query = sys.argv[1]
+	date = getDate(query)
+	
+	if date.valid == 0:
+		wf.add_item(title = "can't recognize the input")
+		wf.send_feedback()
+		return 
 
-    # TODO: check send request in 1 sec
-	year = str(dt.datetime.now().year)
-	month = str(dt.datetime.now().month)
-	day = str(dt.datetime.now().day)
-
-	if len(sys.argv) == 2:
-		query = sys.argv[1]
-		if len(query) == 8:
-    		# TODO: check the valid of date
-			year = query[0:4]
-			month = query[4:6]
-			day = query[6:8]
-
+	year = date.year
+	month = date.month
+	day = date.day
 
 	if len(month) == 1:
 		month = '0' + month
@@ -36,6 +110,8 @@ def get(wf):
 	date1 = year+"/"+month+"/"+day
 	date2 = month+"-"+day+"-"+year
 	date3 = year+""+month+""+day
+
+	time.sleep(.500)
 
 	request = "/nba-t3/games/"+date1+"/schedule.xml?api_key=mhptr4zdhsbdy39qwzq8cxds"
 	conn.request("GET", request)
@@ -47,13 +123,11 @@ def get(wf):
 	wf = Workflow()
 	root = ET.fromstring(data)
 
-	
 	# TODO: check if exist
 	num = str(len(root[0][0]))
 
 	wf.add_item(title = num + " games on " + date2)
 
-	
 	for game in root[0][0]:	
 		# print(game.attrib['status'])
 		status = game.attrib['status']
@@ -81,4 +155,5 @@ def get(wf):
 if __name__ == '__main__':
     wf = Workflow()
     sys.exit(wf.run(get))
+
 
