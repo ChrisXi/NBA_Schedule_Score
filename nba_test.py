@@ -6,6 +6,7 @@ import datetime as dt
 
 import xml.etree.ElementTree as ET
 from workflow import Workflow
+from plistlib import readPlist, writePlist
 
 class Date:
 	def __init__(self, year, month, day, valid):
@@ -57,6 +58,10 @@ def getDate(query):
 					month = ymd[0]
 					day = ymd[1]
 					valid = 1
+				elif ymd[0] == "set":
+					info = readPlist('info.plist')
+					info['API_KEY'] = 'ABC-XYZ'
+					valid = 2
 			elif len(ymd) == 3:
 				if ymd[0].isdigit() and ymd[1].isdigit() and ymd[2].isdigit():
 					year = ymd[0]
@@ -86,6 +91,12 @@ def validDate(year, month, day):
 	return valid
 
 def get(wf):
+
+	api_key = os.getenv("API_KEY")
+	wf.add_item(title = str(api_key))
+	wf.send_feedback()
+	return 
+
 	conn = httplib.HTTPSConnection("api.sportradar.us")
 
 	# http://api.sportradar.us/nba-t3/games/2016/12/31/schedule.xml?api_key=mhptr4zdhsbdy39qwzq8cxds
@@ -97,6 +108,10 @@ def get(wf):
 		wf.add_item(title = "can't recognize the input")
 		wf.send_feedback()
 		return 
+	elif date.valid == 2:
+		wf.add_item(title = "API key was set")
+		wf.send_feedback()
+		return
 
 	year = date.year
 	month = date.month
@@ -111,7 +126,7 @@ def get(wf):
 	date2 = month+"-"+day+"-"+year
 	date3 = year+""+month+""+day
 
-	time.sleep(.500)
+	time.sleep(.200)
 
 	request = "/nba-t3/games/"+date1+"/schedule.xml?api_key=mhptr4zdhsbdy39qwzq8cxds"
 	conn.request("GET", request)
