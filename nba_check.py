@@ -162,6 +162,7 @@ def get(wf):
 	html = urllib2.urlopen(url)
 	soup = BS(html)
 
+	# delete comments
 	comments = soup.findAll(text=lambda text:isinstance(text, Comment))
 	[comment.extract() for comment in comments]
 
@@ -173,7 +174,10 @@ def get(wf):
 	for game in games:
 		# search time
 		g = BS(str(game))
-		status = g.find('span').text
+		href = game.findParent('a')
+
+		status = g.find('div', {'class': 'status'})
+		time = BS(str(status)).findAll('span')[-1].text
 
 		gameInfo = g.findAll('div', {'class': 'score'})
 		teams = BS(str(gameInfo)).findAll('li')
@@ -190,20 +194,19 @@ def get(wf):
 			info = home.firstName + ' ' + home.lastName + ' ' + \
 				   home.score + ' : ' + away.score + ' ' + \
 			   	   away.firstName + ' ' + away.lastName
-			info = "{:<70}".format(info) + status
+			info = "{:<60}".format(info) + time
 		else:
 			info = home.firstName + ' ' + home.lastName + ' (' + home.score + ')'\
 				   + ' vs ' + \
 			   	   away.firstName + ' ' + away.lastName + ' (' + away.score + ')'
-			info = "{:<70}".format(info) + status
+			info = "{:<60}".format(info) + time
 
-
-		# print(title)
-		# print(info)
-
+		return_url = 'http://sports.yahoo.com'+str(href['href'])
 		wf.add_item(title = title,
 					subtitle = info,
-					icon  = icon_url)
+					icon  = icon_url,
+					arg   = return_url,
+					valid = True)
 	wf.send_feedback()
 
 if __name__ == '__main__':
